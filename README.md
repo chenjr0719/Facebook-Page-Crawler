@@ -2,13 +2,13 @@
 
 A Python crawler uses Facebook Graph API to crawling fan page's public posts, comments, and reactions.
 
-## How it works?
+## How does it work?
 
 Using **Facebook Graph API**, that's all.
 
 ## Requirement
 
-**Facebook Page Crawler** is build by **Python 3** and use **requests** module.
+**Facebook Page Crawler** is built by **Python 3** and use **requests** module.
 
 Please make sure that you have already install **requests**.
 
