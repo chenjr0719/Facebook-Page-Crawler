@@ -1,8 +1,6 @@
-import requests
-import os
-import json
-from datetime import datetime
+import requests, os, time, json
 import argparse, sys
+from datetime import datetime
 
 ##########################################################################################################
 # Set crawler target and parameters.
@@ -36,16 +34,26 @@ app_secret = 'YOUR_APP_SECRET'
 
 token_url = 'https://graph.facebook.com/oauth/access_token?client_id=' + app_id + '&client_secret=' + app_secret + '&grant_type=client_credentials'
 token = requests.get(token_url, headers={'Connection':'close'}).text
+time.sleep(0.01)
+
+##########################################################################################################
+def getRequests(url, token):
+
+    requests_result = requests.get(url, headers={'Connection':'close'})
+    time.sleep(0.01)
+
+    if requests_result.ok:
+        requests_result = requests_result.json()
+    else:
+        token = requests.get(token_url, headers={'Connection':'close'}).text
+        time.sleep(0.01)
+        requests_result = requests.get(url, headers={'Connection':'close'}).json()
+        time.sleep(0.01)
+
+    return requests_result
 
 ##########################################################################################################
 def getFeedIds(feeds, token, feed_list):
-
-    if feeds.ok:
-        feeds = feeds.json()
-    else:
-        token = requests.get(token_url, headers={'Connection':'close'}).text
-        feeds_url = 'https://graph.facebook.com/v2.7/' + target + '/?fields=feed.limit(100).since(' + since +').until(' + until + '){id}&' + token
-        feeds = requests.get(feeds_url, headers={'Connection':'close'}).json()
 
     feeds = feeds['feed'] if 'feed' in feeds else feeds
 
@@ -57,20 +65,12 @@ def getFeedIds(feeds, token, feed_list):
     
     if 'paging' in feeds and 'next' in feeds['paging']:
         feeds_url = feeds['paging']['next']
-        feeds = requests.get(feeds_url, headers={'Connection':'close'})
-        feed_list = getFeedIds(feeds, token, feed_list)
+        feed_list = getFeedIds(getRequests(feeds_url, token), token, feed_list)
 
     return feed_list
 
 ##########################################################################################################
 def getComments(comments, token, comments_count):
-
-    if comments.ok:
-        comments = comments.json()
-    else:
-        token = requests.get(token_url, headers={'Connection':'close'}).text
-        comments_url = 'https://graph.facebook.com/' + feed_id + '?fields=comments.limit(100)&' + token
-        comments = requests.get(comments_url, headers={'Connection':'close'}).json()
 
     # If comments exist.
     comments = comments['comments'] if 'comments' in comments else comments
@@ -92,6 +92,8 @@ def getComments(comments, token, comments_count):
                 'created_time': comment['created_time']
             }
 
+            comments_count+= 1
+
             if stream:
                 print(comment_content)
             else:
@@ -101,25 +103,15 @@ def getComments(comments, token, comments_count):
                 comment_file.close()
                 #log.write('Processing comment: ' + feed_id + '/' + comment['id'] + '\n')
 
-            comments_count+= 1
-
         # Check comments has next or not.
         if 'next' in comments['paging']:
             comments_url = comments['paging']['next']
-            comments = requests.get(comments_url, headers={'Connection':'close'})
-            comments_count = getComments(comments, token, comments_count)
+            comments_count = getComments(getRequests(comments_url, token), token, comments_count)
 
     return comments_count
 
 ##########################################################################################################
 def getReactions(reactions, token, reactions_count_dict):
-
-    if reactions.ok:
-        reactions = reactions.json()
-    else:
-        token = requests.get(token_url, headers={'Connection':'close'}).text
-        reactions_url = 'https://graph.facebook.com/v2.7/' + feed_id + '?fields=reactions.limit(100)&' + token
-        reactions = requests.get(reactions_url, headers={'Connection':'close'}).json
 
     # If reactions exist.
     reactions = reactions['reactions'] if 'reactions' in reactions else reactions
@@ -131,15 +123,6 @@ def getReactions(reactions, token, reactions_count_dict):
                 os.makedirs(reactions_dir)
 
         for reaction in reactions['data']:
-
-            if stream:
-                print(reaction)
-            else:
-                print('Processing reaction: ' + feed_id + '/' + reaction['id'] + '\n')
-                reaction_file = open(reactions_dir + reaction['id'] + '.json', 'w')
-                reaction_file.write(json.dumps(reaction, indent = 4, ensure_ascii = False))
-                reaction_file.close()
-                #log.write('Processing reaction: ' + feed_id + '/' + reaction['id'] + '\n')
 
             if reaction['type'] == 'LIKE':
                 reactions_count_dict['like']+= 1
@@ -154,13 +137,32 @@ def getReactions(reactions, token, reactions_count_dict):
             elif reaction['type'] == 'ANGRY':
                 reactions_count_dict['angry']+= 1
 
+            if stream:
+                print(reaction)
+            else:
+                print('Processing reaction: ' + feed_id + '/' + reaction['id'] + '\n')
+                reaction_file = open(reactions_dir + reaction['id'] + '.json', 'w')
+                reaction_file.write(json.dumps(reaction, indent = 4, ensure_ascii = False))
+                reaction_file.close()
+                #log.write('Processing reaction: ' + feed_id + '/' + reaction['id'] + '\n')
+
         # Check reactions has next or not.
         if 'next' in reactions['paging']:
             reactions_url = reactions['paging']['next']
-            reactions = requests.get(reactions_url, headers={'Connection':'close'})
-            reactions_count_dict = getReactions(reactions, token, reactions_count_dict)
+            reactions_count_dict = getReactions(getRequests(reactions_url, token), token, reactions_count_dict)
             
     return reactions_count_dict
+
+##########################################################################################################
+def getAttachments(attachments, token, attachments_content):
+
+    # If attachments exist.
+    attachments = attachments['attachments'] if 'attachments' in attachments else attachments
+    if 'data' in attachments:
+        attachments_content['title'] = attachments['data'][0]['title'] if 'title' in attachments['data'][0] else ''
+        attachments_content['description'] = attachments['data'][0]['description'] if 'description' in attachments['data'][0] else ''
+
+    return attachments_content
 
 ##########################################################################################################
 #Get list of feed id from target.
@@ -180,9 +182,7 @@ if not stream:
     log.write('Task start at:' + start_time + '\nTaget: ' + target + '\nSince: ' + since + '\nUntil: ' + until + '\n')
 
 feeds_url = 'https://graph.facebook.com/v2.7/' + target + '/?fields=feed.limit(100).since(' + since +').until(' + until + '){id}&' + token
-feeds = requests.get(feeds_url, headers={'Connection':'close'})
-feed_list = []
-feed_list = getFeedIds(feeds, token, feed_list)
+feed_list = getFeedIds(getRequests(feeds_url, token), token, [])
 
 if not stream:
     feed_list_file = open('feed_ids', 'w')
@@ -197,7 +197,8 @@ if not stream:
 
 for feed_id in feed_list:
 
-    # For feed.
+    feed_url = 'https://graph.facebook.com/' + feed_id
+
     if not stream:
         feed_dir = feed_id + '/'
         if not os.path.exists(feed_dir):
@@ -206,26 +207,15 @@ for feed_id in feed_list:
         print('\nProcessing feed: ' + feed_id + '\nAt: ' + datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S') + '\n')
         log.write('\nProcessing feed: ' + feed_id + '\nAt: ' + datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S') + '\n')
 
-    feed_url = 'https://graph.facebook.com/' + feed_id
-    feed = requests.get(feed_url, headers={'Connection':'close'})
-
-    if feed.ok:
-        feed = feed.json()
-    else:
-        token = requests.get(token_url, headers={'Connection':'close'}).text
-        feed_url = 'https://graph.facebook.com/' + feed_id
-        feed = requests.get(feed_url, headers={'Connection':'close'}).json()
-
     # For comments.
     comments_count = 0
-    comments_url = 'https://graph.facebook.com/' + feed_id + '?fields=comments.limit(100)&' + token
-    comments = requests.get(comments_url, headers={'Connection':'close'})
+    comments_url = feed_url + '?fields=comments.limit(100)&' + token
+    comments = getRequests(comments_url, token)
+
     comments_count = getComments(comments, token, comments_count)
 
     # For reactions.
     if get_reactions:
-        reactions_url = 'https://graph.facebook.com/v2.7/' + feed_id + '?fields=reactions.limit(100)&' + token
-        reactions = requests.get(reactions_url, headers={'Connection':'close'})
         reactions_count_dict = {
             'like': 0,
             'love': 0,
@@ -234,32 +224,37 @@ for feed_id in feed_list:
             'sad': 0,
             'angry': 0
         }
+        reactions_url = feed_url + '?fields=reactions.limit(100)&' + token
+        reactions = getRequests(reactions_url, token)
+        
         reactions_count_dict = getReactions(reactions, token, reactions_count_dict)
+    
+    # For attachments.
+    attachments_content = {
+        'title': '',
+        'description': ''
+    }
+    attachments_url = feed_url + '?fields=attachments&' + token
+    attachments = getRequests(attachments_url, token)
 
-    # Output feed content.
+    attachments_content = getAttachments(attachments, token, attachments_content)
+
+    # For feed content.
+    feed = getRequests(feed_url, token)
+
     if 'message' in feed:
+        feed_content = {
+            'id': feed['id'],
+            'message': feed['message'],
+            'link': feed['link'] if 'link' in feed else None,
+            'created_time': feed['created_time'],
+            'comments_count': comments_count
+        }
+
+        feed_content.update(attachments_content)
+
         if get_reactions:
-            feed_content = {
-                'id': feed['id'],
-                'message': feed['message'],
-                'link': feed['link'] if 'link' in feed else None,
-                'created_time': feed['created_time'],
-                'comments_count': comments_count,
-                'like': reactions_count_dict['like'],
-                'love': reactions_count_dict['love'],
-                'haha': reactions_count_dict['haha'],
-                'wow': reactions_count_dict['wow'],
-                'sad': reactions_count_dict['sad'],
-                'angry': reactions_count_dict['angry']
-            }
-        else:
-            feed_content = {
-                'id': feed['id'],
-                'message': feed['message'],
-                'link': feed['link'] if 'link' in feed else None,
-                'created_time': feed['created_time'],
-                'comments_count': comments_count
-            }
+            feed_content.update(reactions_count_dict)
 
         if stream:
             print(feed_content)
