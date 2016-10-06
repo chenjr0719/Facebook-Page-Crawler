@@ -38,7 +38,7 @@ token_url = 'https://graph.facebook.com/oauth/access_token?client_id=' + app_id 
 token = requests.get(token_url).text
 
 ##########################################################################################################
-def get_feed_ids(feeds, token, feed_list):
+def getFeedIds(feeds, token, feed_list):
 
     if feeds.ok:
         feeds = feeds.json()
@@ -53,17 +53,17 @@ def get_feed_ids(feeds, token, feed_list):
         feed_list.append(feed['id'])
         if not stream:
             print('Feed found: ' + feed['id'] + '\n')
-            log.write('Feed found: ' + feed['id'] + '\n')
+            #log.write('Feed found: ' + feed['id'] + '\n')
     
     if 'paging' in feeds and 'next' in feeds['paging']:
         feeds_url = feeds['paging']['next']
         feeds = requests.get(feeds_url)
-        feed_list = get_feed_ids(feeds, token, feed_list)
+        feed_list = getFeedIds(feeds, token, feed_list)
 
     return feed_list
 
 ##########################################################################################################
-def get_comments(comments, token, comments_count):
+def getComments(comments, token, comments_count):
 
     if comments.ok:
         comments = comments.json()
@@ -99,7 +99,7 @@ def get_comments(comments, token, comments_count):
                 comment_file = open(comments_dir + comment['id'] + '.json', 'w')
                 comment_file.write(json.dumps(comment_content, indent = 4, ensure_ascii = False))
                 comment_file.close()
-                log.write('Processing comment: ' + feed_id + '/' + comment['id'] + '\n')
+                #log.write('Processing comment: ' + feed_id + '/' + comment['id'] + '\n')
 
             comments_count+= 1
 
@@ -107,12 +107,12 @@ def get_comments(comments, token, comments_count):
         if 'next' in comments['paging']:
             comments_url = comments['paging']['next']
             comments = requests.get(comments_url)
-            comments_count = get_comments(comments, token, comments_count)
+            comments_count = getComments(comments, token, comments_count)
 
     return comments_count
 
 ##########################################################################################################
-def get_reactions(reactions, token, reactions_count_dict):
+def getReactions(reactions, token, reactions_count_dict):
 
     if reactions.ok:
         reactions = reactions.json()
@@ -139,7 +139,7 @@ def get_reactions(reactions, token, reactions_count_dict):
                 reaction_file = open(reactions_dir + reaction['id'] + '.json', 'w')
                 reaction_file.write(json.dumps(reaction, indent = 4, ensure_ascii = False))
                 reaction_file.close()
-                log.write('Processing reaction: ' + feed_id + '/' + reaction['id'] + '\n')
+                #log.write('Processing reaction: ' + feed_id + '/' + reaction['id'] + '\n')
 
             if reaction['type'] == 'LIKE':
                 reactions_count_dict['like']+= 1
@@ -158,7 +158,7 @@ def get_reactions(reactions, token, reactions_count_dict):
         if 'next' in reactions['paging']:
             reactions_url = reactions['paging']['next']
             reactions = requests.get(reactions_url)
-            reactions_count_dict = get_reactions(reactions, token, reactions_count_dict)
+            reactions_count_dict = getReactions(reactions, token, reactions_count_dict)
             
     return reactions_count_dict
 
@@ -182,7 +182,7 @@ if not stream:
 feeds_url = 'https://graph.facebook.com/v2.7/' + target + '/?fields=feed.limit(100).since(' + since +').until(' + until + '){id}&' + token
 feeds = requests.get(feeds_url)
 feed_list = []
-feed_list = get_feed_ids(feeds, token, feed_list)
+feed_list = getFeedIds(feeds, token, feed_list)
 
 if not stream:
     feed_list_file = open('feed_ids', 'w')
@@ -220,7 +220,7 @@ for feed_id in feed_list:
     comments_count = 0
     comments_url = 'https://graph.facebook.com/' + feed_id + '?fields=comments.limit(100)&' + token
     comments = requests.get(comments_url)
-    comments_count = get_comments(comments, token, comments_count)
+    comments_count = getComments(comments, token, comments_count)
 
     # For reactions.
     if get_reactions:
@@ -234,7 +234,7 @@ for feed_id in feed_list:
             'sad': 0,
             'angry': 0
         }
-        reactions_count_dict = get_reactions(reactions, token, reactions_count_dict)
+        reactions_count_dict = getReactions(reactions, token, reactions_count_dict)
 
     # Output feed content.
     if 'message' in feed:
