@@ -35,7 +35,7 @@ app_id = 'YOUR_APP_ID'
 app_secret = 'YOUR_APP_SECRET'
 
 token_url = 'https://graph.facebook.com/oauth/access_token?client_id=' + app_id + '&client_secret=' + app_secret + '&grant_type=client_credentials'
-token = requests.get(token_url).text
+token = requests.get(token_url, headers={'Connection':'close'}).text
 
 ##########################################################################################################
 def getFeedIds(feeds, token, feed_list):
@@ -43,9 +43,9 @@ def getFeedIds(feeds, token, feed_list):
     if feeds.ok:
         feeds = feeds.json()
     else:
-        token = requests.get(token_url).text
+        token = requests.get(token_url, headers={'Connection':'close'}).text
         feeds_url = 'https://graph.facebook.com/v2.7/' + target + '/?fields=feed.limit(100).since(' + since +').until(' + until + '){id}&' + token
-        feeds = requests.get(feeds_url).json()
+        feeds = requests.get(feeds_url, headers={'Connection':'close'}).json()
 
     feeds = feeds['feed'] if 'feed' in feeds else feeds
 
@@ -57,7 +57,7 @@ def getFeedIds(feeds, token, feed_list):
     
     if 'paging' in feeds and 'next' in feeds['paging']:
         feeds_url = feeds['paging']['next']
-        feeds = requests.get(feeds_url)
+        feeds = requests.get(feeds_url, headers={'Connection':'close'})
         feed_list = getFeedIds(feeds, token, feed_list)
 
     return feed_list
@@ -68,9 +68,9 @@ def getComments(comments, token, comments_count):
     if comments.ok:
         comments = comments.json()
     else:
-        token = requests.get(token_url).text
+        token = requests.get(token_url, headers={'Connection':'close'}).text
         comments_url = 'https://graph.facebook.com/' + feed_id + '?fields=comments.limit(100)&' + token
-        comments = requests.get(comments_url).json()
+        comments = requests.get(comments_url, headers={'Connection':'close'}).json()
 
     # If comments exist.
     comments = comments['comments'] if 'comments' in comments else comments
@@ -106,7 +106,7 @@ def getComments(comments, token, comments_count):
         # Check comments has next or not.
         if 'next' in comments['paging']:
             comments_url = comments['paging']['next']
-            comments = requests.get(comments_url)
+            comments = requests.get(comments_url, headers={'Connection':'close'})
             comments_count = getComments(comments, token, comments_count)
 
     return comments_count
@@ -117,9 +117,9 @@ def getReactions(reactions, token, reactions_count_dict):
     if reactions.ok:
         reactions = reactions.json()
     else:
-        token = requests.get(token_url).text
+        token = requests.get(token_url, headers={'Connection':'close'}).text
         reactions_url = 'https://graph.facebook.com/v2.7/' + feed_id + '?fields=reactions.limit(100)&' + token
-        reactions = requests.get(reactions_url).json
+        reactions = requests.get(reactions_url, headers={'Connection':'close'}).json
 
     # If reactions exist.
     reactions = reactions['reactions'] if 'reactions' in reactions else reactions
@@ -157,7 +157,7 @@ def getReactions(reactions, token, reactions_count_dict):
         # Check reactions has next or not.
         if 'next' in reactions['paging']:
             reactions_url = reactions['paging']['next']
-            reactions = requests.get(reactions_url)
+            reactions = requests.get(reactions_url, headers={'Connection':'close'})
             reactions_count_dict = getReactions(reactions, token, reactions_count_dict)
             
     return reactions_count_dict
@@ -180,7 +180,7 @@ if not stream:
     log.write('Task start at:' + start_time + '\nTaget: ' + target + '\nSince: ' + since + '\nUntil: ' + until + '\n')
 
 feeds_url = 'https://graph.facebook.com/v2.7/' + target + '/?fields=feed.limit(100).since(' + since +').until(' + until + '){id}&' + token
-feeds = requests.get(feeds_url)
+feeds = requests.get(feeds_url, headers={'Connection':'close'})
 feed_list = []
 feed_list = getFeedIds(feeds, token, feed_list)
 
@@ -207,25 +207,25 @@ for feed_id in feed_list:
         log.write('\nProcessing feed: ' + feed_id + '\nAt: ' + datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S') + '\n')
 
     feed_url = 'https://graph.facebook.com/' + feed_id
-    feed = requests.get(feed_url)
+    feed = requests.get(feed_url, headers={'Connection':'close'})
 
     if feed.ok:
         feed = feed.json()
     else:
-        token = requests.get(token_url).text
+        token = requests.get(token_url, headers={'Connection':'close'}).text
         feed_url = 'https://graph.facebook.com/' + feed_id
-        feed = requests.get(feed_url).json()
+        feed = requests.get(feed_url, headers={'Connection':'close'}).json()
 
     # For comments.
     comments_count = 0
     comments_url = 'https://graph.facebook.com/' + feed_id + '?fields=comments.limit(100)&' + token
-    comments = requests.get(comments_url)
+    comments = requests.get(comments_url, headers={'Connection':'close'})
     comments_count = getComments(comments, token, comments_count)
 
     # For reactions.
     if get_reactions:
         reactions_url = 'https://graph.facebook.com/v2.7/' + feed_id + '?fields=reactions.limit(100)&' + token
-        reactions = requests.get(reactions_url)
+        reactions = requests.get(reactions_url, headers={'Connection':'close'})
         reactions_count_dict = {
             'like': 0,
             'love': 0,
