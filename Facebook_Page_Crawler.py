@@ -167,7 +167,7 @@ def getReactions(reactions, token, reactions_count_dict):
 
 #Create a directory to restore the result if not in stream mode.
 if not stream:
-    result_dir = 'Result/'
+    result_dir = 'Result/' + target + '/'
 
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
