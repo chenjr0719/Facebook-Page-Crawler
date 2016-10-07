@@ -192,14 +192,56 @@ def getFeed(feed_id):
             feed_file.write(json.dumps(feed_content, indent = 4, ensure_ascii = False))
             feed_file.close()
 
-    os.chdir('../')
+    if not stream:
+        os.chdir('../')
+
+##########################################################################################################
+def getTarget(target):
+
+    if not stream:
+        target_dir = target + '/'
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+        os.chdir(target_dir)
+
+        log = open('log', 'w')
+        start_time = datetime.now()
+        execution_start_time = time.time()
+        print('Task start at:' + datetime.strftime(start_time, '%Y-%m-%d %H:%M:%S') + '\nTaget: ' + target + '\nSince: ' + since + '\nUntil: ' + until + '\n')
+        log.write('Task start at:' + datetime.strftime(start_time, '%Y-%m-%d %H:%M:%S') + '\nTaget: ' + target + '\nSince: ' + since + '\nUntil: ' + until + '\n')
+        log.close()
+
+    #Get list of feed id from target.
+    feeds_url = 'https://graph.facebook.com/v2.7/' + target + '/?fields=feed.limit(100).since(' + since + ').until(' + until + '){id}&' + token
+    feed_list = getFeedIds(getRequests(feeds_url), [])
+
+    if not stream:
+        feed_list_file = open('feed_ids', 'w')
+        for id in feed_list:
+            feed_list_file.write(id + '\n')
+        feed_list_file.close()
+
+    #Get message, comments and reactions from feed.
+    target_pool = Pool()
+    target_pool.map(getFeed, feed_list)
+    target_pool.close()
+
+    if not stream:
+        end_time = datetime.now()
+        cost_time = time.time() - execution_start_time
+        print('\nTask end Time: ' + datetime.strftime(end_time, '%Y-%m-%d %H:%M:%S') + '\nTime Cost: ' + str(cost_time))
+        log = open('log', 'a')
+        log.write('\nTask end Time: ' + datetime.strftime(end_time, '%Y-%m-%d %H:%M:%S') + '\nTime Cost: ' + str(cost_time))
+        log.close()
+        os.chdir('../')
+
 
 ##########################################################################################################
 if __name__ == '__main__':
     # Set crawler target and parameters.
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("target", help="Set the target fans page you want to crawling. Ex: 'appledaily.tw'")
+    parser.add_argument("target", help="Set the target fans page(at least one) you want to crawling. Ex: 'appledaily.tw' or 'appledaily.tw, ETtoday'")
     parser.add_argument("since", help="Set the start date you want to crawling. Format: 'yyyy-mm-dd HH:MM:SS'")
     parser.add_argument("until", help="Set the end date you want to crawling. Format: 'yyyy-mm-dd HH:MM:SS'")
 
@@ -229,41 +271,18 @@ if __name__ == '__main__':
 
     #Create a directory to restore the result if not in stream mode.
     if not stream:
-        result_dir = 'Result/' + target + '/'
-
+        result_dir = 'Result/'
         if not os.path.exists(result_dir):
             os.makedirs(result_dir)
-
         os.chdir(result_dir)
 
-        log = open('log', 'w')
-        start_time = datetime.now()
-        execution_start_time = time.time()
-        print('Task start at:' + datetime.strftime(start_time, '%Y-%m-%d %H:%M:%S') + '\nTaget: ' + target + '\nSince: ' + since + '\nUntil: ' + until + '\n')
-        log.write('Task start at:' + datetime.strftime(start_time, '%Y-%m-%d %H:%M:%S') + '\nTaget: ' + target + '\nSince: ' + since + '\nUntil: ' + until + '\n')
-        log.close()
+    if target.find(',') == -1:
 
-    #Get list of feed id from target.
-    feeds_url = 'https://graph.facebook.com/v2.7/' + target + '/?fields=feed.limit(100).since(' + since +').until(' + until + '){id}&' + token
-    feed_list = getFeedIds(getRequests(feeds_url), [])
+        getTarget(target)
+        
+    else:
 
-    if not stream:
-        feed_list_file = open('feed_ids', 'w')
-
-        for id in feed_list:
-            feed_list_file.write(id + '\n')
-
-        feed_list_file.close()
-
-    #Get message, comments and reactions from feed.
-    p = Pool()
-    p.map(getFeed, feed_list)
-
-    if not stream:
-        end_time = datetime.now()
-        cost_time = time.time() - execution_start_time
-        print('\nTask end Time: ' + datetime.strftime(end_time, '%Y-%m-%d %H:%M:%S') + '\nTime Cost: ' + str(cost_time))
-        log = open('log', 'a')
-        log.write('\nTask end Time: ' + datetime.strftime(end_time, '%Y-%m-%d %H:%M:%S') + '\nTime Cost: ' + str(cost_time))
-        log.close()
+        target = target.split(',')
+        for t in target :
+            getTarget(t)
 
