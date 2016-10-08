@@ -58,4 +58,4 @@ This crawler add **multi-processing** now, it will parallel processing feeds at 
 
 By default, it will use the number of your CPU to create process.
 
-You can also modifiy it, but do not use too large number and.
+You can also modifiy it, but do not use too large number.
