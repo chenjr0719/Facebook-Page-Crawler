@@ -6,56 +6,59 @@ A Python crawler uses Facebook Graph API to crawling fan page's public posts, co
 
 Using **Facebook Graph API**, that's all.
 
-## Requirement
+## Installation
 
-**Facebook Page Crawler** is built by **Python 3** and use **requests** module.
-
-Please make sure that you have already install **requests**.
-
-If not, you can use **pip** to install:
+**Facebook Page Crawler** is built on **Python 3** and use **requests** module.
+After clone this repository, use following command to install this module:
 ```
-pip install requests
+pytho setup.py develop
+```
+
+This crawler can be used under command line as:
+```
+facebook_page_crawler $app_id $app_secret $targets $since $until
 ```
 
 ## How to use?
 
-**Facebook Page Crawler** require at least **three** parameters:
+**Facebook Page Crawler** requires **five** arguments:
 
-1. **target**: The page name you want to crawl.
-2. **since**: The date you want to start the crawling.
-3. **until**: The date you want to finish the crawling.
+1. **app_id**: app_id of your Facebook app, the will used to access Facebook Graph API.
+2. **app_secret**: app_secret of your Facebook app, the will used to access Facebook Graph API.
+3. **targets**: The page name you want to crawl.
+4. **since**: The date you want to start the crawling.
+5. **until**: The date you want to finish the crawling.
 
-And **two** additional parameters:
+And other additional arguments:
 
-1. **-r, --reactions**: Default is **no**. Set to **yes** will collect reactions data. Because the number of reactions is too large, use it **CAREFULLY!!!**
-2. **-s, --stream**: Default is **no**. Set to **yes** will turn to streaming mode.
+1. **-att, --attachments**: Default is **False**. Set to **True** will collect attachments of post and comments.
+2. **-r, --reactions**: Default is **False**. Set to **True** will collect reactions data. Because the number of reactions is too large, use it **CAREFULLY!!!**
+3. **-api, --api-version**: Default is **v2.7**. This will cange the version of **Facebook Graph API**, but currently this crawler only test under **v2.7**.
+4. **-l, --limit**: Default is **100**. This argument will limit the number of feed or comments of each request, larger number will decrease the number of request.
+5. **-d, --debug**: Default is **False**. Enable debug mode to see additional information of crawling.
+6. **-p, --process_num**: Default is the number of your CPU. Parallel processing feeds at the same time.
+7. **-w, --write**: Default is **True**. Write to json files under `Results/`
 
-You can use this two command to find some help:
+You can use this command to find some help:
 ```
-python Facebook_Page_Crawler.py -h
-python Facebook_Page_Crawler.py --help
+facebook_page_crawler --help
 ```
 
 ### Example usage
 
 ```
-python Facebook_Page_Crawler.py 'appledaily.tw' '2016-09-01 00:00:00' '2016-09-01 23:59:59'
-python Facebook_Page_Crawler.py 'appledaily.tw' '2016-09-01 00:00:00' '2016-09-01 23:59:59' -r yes
-python Facebook_Page_Crawler.py 'appledaily.tw' '2016-09-01 00:00:00' '2016-09-01 23:59:59' -s yes
-python Facebook_Page_Crawler.py 'appledaily.tw' '2016-09-01 00:00:00' '2016-09-01 23:59:59' -r yes -s yes
-python Facebook_Page_Crawler.py 'appledaily.tw,ETtoday' '2016-09-01 00:00:00' '2016-09-01 23:59:59'
+facebook_page_crawler $APP_ID $APP_SECRET 'appledaily.tw' '2016-09-01 00:00:00' '2016-09-01 23:59:59'
+facebook_page_crawler $APP_ID $APP_SECRET 'appledaily.tw' '2016-09-01 00:00:00' '2016-09-01 23:59:59' -r yes
+facebook_page_crawler $APP_ID $APP_SECRET 'appledaily.tw,ETtoday' '2016-09-01 00:00:00' '2016-09-01 23:59:59'
 ```
 
 ## About token
 
 This crawler use **app_id**, **app_secret** to get the token.
 
-Replace **app_id**, **app_secret** to use your own app setting.
+Please an app at https://developers.facebook.com/ and use the **app_id** and **app_secret** at this crawler.
 
-## Multi-Processing
+## TODO
 
-This crawler add **multi-processing** now, it will parallel processing feeds at the same time.
-
-By default, it will use the number of your CPU to create process.
-
-You can also modifiy it, but do not use too large number.
+1. Add **tests**
+2. Maybe publish to **PyPI**
