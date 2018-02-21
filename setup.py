@@ -9,7 +9,7 @@ install_requires = [str(ir.req) for ir in install_requires]
 setup(
     name='facebook_page_crawler',
     version='0.0.1',
-    description='The sverless-like framework with docker',
+    description='The crawler of Facebook pages.',
     url='https://github.com/chenjr0719/Facebook-Page-Crawler',
     author='Jacob Chen',
     author_email='chenjr0719@gmail.com',
@@ -19,7 +19,7 @@ setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'facebook_page_crawler = facebook_page_crawler.__main__'
+            'facebook_page_crawler = facebook_page_crawler.__main__:main'
         ]
     },
 )

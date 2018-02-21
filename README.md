@@ -11,12 +11,19 @@ Using **Facebook Graph API**, that's all.
 **Facebook Page Crawler** is built on **Python 3** and use **requests** module.
 After clone this repository, use following command to install this module:
 ```
-pytho setup.py develop
+python setup.py develop
 ```
 
 This crawler can be used under command line as:
 ```
 facebook_page_crawler $app_id $app_secret $targets $since $until
+```
+
+## Uninstallation
+
+Run following command:
+```
+python setup.py develop --uninstall
 ```
 
 ## How to use?
@@ -56,9 +63,10 @@ facebook_page_crawler $APP_ID $APP_SECRET 'appledaily.tw,ETtoday' '2016-09-01 00
 
 This crawler use **app_id**, **app_secret** to get the token.
 
-Please an app at https://developers.facebook.com/ and use the **app_id** and **app_secret** at this crawler.
+Please create an app at https://developers.facebook.com/ and use the **app_id** and **app_secret** at this crawler.
 
 ## TODO
 
-1. Add **tests**
-2. Maybe publish to **PyPI**
+1. Add tests
+2. Maybe publish to PyPI
+3. Counts of reactions and likes
